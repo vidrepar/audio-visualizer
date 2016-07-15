@@ -72,8 +72,17 @@ var app = {
         app.$progress = $('<progress>');
         $('.buttons-bg').append($('<div>', { class:'song-progress-container' }).append(app.$progress));
 
+        app.$progress.on('mouseover', function () {
+            console.log('Get the value!');
+        });
+
         // Play & Stop button
-        app.$playBtn = $('div', { class:'play-btn' });
+        app.$playBtn = $('<div>', { class:'play-btn' });
+        $('.song-progress-container').append(app.$playBtn);
+
+        app.$playBtn.on('click', function () {
+            console.log('Play');
+        });
 
     },
     onCompleteFunction:function () {
@@ -147,12 +156,13 @@ var app = {
         // Audio setup
         app.sound = new Pizzicato.Sound({
             source: 'file',
-            options: { path: 'assets/audio/song-' + Math.ceil(Math.random()*4) + '.mp3' }
+            //options: { path: 'assets/audio/song-' + Math.ceil(Math.random()*4) + '.mp3' }
+            options: { path: 'assets/audio/song-3.mp3' }
         }, function() {
 
             console.log('sound file loaded!');
 
-
+            console.log(app.sound);
 
             app.sound.play();
             app.animate();
@@ -161,7 +171,7 @@ var app = {
         });
 
         app.analyser = app.sound.getAnalyser();
-        app.analyser.fftSize = 256;
+        app.analyser.fftSize = 256*2*2*2*2*2;
         app.bufferLength = app.analyser.frequencyBinCount;
         //console.log(app.bufferLength);
         //app.dataArray = new Uint8Array(app.bufferLength);
@@ -186,10 +196,12 @@ var app = {
         // Average frequency
         elmt = app.dataArray;
         var fttSum = 0;
-        for( var i = 0; i < elmt.length; i++ ){
+        for( var i = 0; i < 12*2*2; i++ ){
             fttSum += parseInt( elmt[i], 10 ); //don't forget to add the base
         }
-        var fttAvg = Math.floor(fttSum/elmt.length);
+        var fttAvg = Math.floor(fttSum/(12*2*2));
+
+        console.log(fttAvg);
 
         // Get current time of a song
         //console.log(app.analyser.context.currentTime);
@@ -215,13 +227,13 @@ var app = {
         if(app.isAnimation){
 
             // Morphes
-            if (fttAvg > 43) {
+            if (fttAvg > 210) {
 
                 app.morphToSphere();
                 app.particlesGroup.rotation.x += 0.1;
                 app.particlesGroup.rotation.y += 0.1;
 
-            } else if(fttAvg < 43){
+            } else if(fttAvg < 210){
 
                 app.morphToBox();
                 app.particlesGroup.rotation.x += 0.1;
@@ -236,8 +248,10 @@ var app = {
                 app.sound.play();
             }
 
-            /*if(app.progressValue === 10){
+            /*if(app.progressValue === 3){
+
                 app.sound.stop();
+
             } else if (app.progressValue === 13){
                 app.sound.play();
             }*/
