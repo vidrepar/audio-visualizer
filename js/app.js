@@ -19,6 +19,13 @@ var app = {
 
     particlesArray:[],
     particlesGroup:null,
+    isAnimation:false,
+    container:null,
+    $progress:null,
+    progressValue:null,
+    progressMax:null,
+    $playBtn:null,
+    $stopBtn:null,
 
     init: function () {
 
@@ -42,20 +49,33 @@ var app = {
 
         // Append to HTML
 
-        var container = $('<div>');
+        app.container = $('<div>');
         /*
         * domElement = element in which
         * all of the scene will be rendered
         * this is our canvas basically
         * and the renderer returns it
         * */
-        container.append(app.renderer.domElement);
-        $('body').append(container);
+        app.container.append(app.renderer.domElement);
+        $('body').append(app.container);
 
         app.drawParticles();
+        app.drawButtons();
 
     },
-    isAnimation:false,
+    drawButtons:function () {
+
+        // Controllers' background
+        app.container.append($('<div>', { class:'buttons-bg' }));
+
+        // Progress bar
+        app.$progress = $('<progress>');
+        $('.buttons-bg').append($('<div>', { class:'song-progress-container' }).append(app.$progress));
+
+        // Play & Stop button
+        app.$playBtn = $('div', { class:'play-btn' });
+
+    },
     onCompleteFunction:function () {
 
         app.isAnimation = false;
@@ -127,10 +147,13 @@ var app = {
         // Audio setup
         app.sound = new Pizzicato.Sound({
             source: 'file',
-            options: { path: 'assets/audio/song-1.mp3' }
+            options: { path: 'assets/audio/song-' + Math.ceil(Math.random()*4) + '.mp3' }
         }, function() {
 
             console.log('sound file loaded!');
+
+
+
             app.sound.play();
             app.animate();
             console.log(app.sound.sourceNode.buffer.duration);
@@ -174,6 +197,15 @@ var app = {
         // Get song duration
         //console.log(app.sound.sourceNode.buffer.duration);
 
+        app.progressValue = Math.floor(app.analyser.context.currentTime);
+        app.progressMax = Math.floor(app.sound.sourceNode.buffer.duration);
+
+        app.$progress.attr({
+            value: app.progressValue,
+            max: app.progressMax
+        });
+
+
         /*
          * ANIMATE STUFF
          * */
@@ -181,6 +213,8 @@ var app = {
         app.isAnimation = true;
 
         if(app.isAnimation){
+
+            // Morphes
             if (fttAvg > 43) {
 
                 app.morphToSphere();
@@ -194,6 +228,20 @@ var app = {
                 app.particlesGroup.rotation.z += 0.1;
 
             }
+
+            // Stop animation
+            if(app.progressValue === app.progressMax){
+                console.log('SAME SAME SAME');
+                app.sound.stop();
+                app.sound.play();
+            }
+
+            /*if(app.progressValue === 10){
+                app.sound.stop();
+            } else if (app.progressValue === 13){
+                app.sound.play();
+            }*/
+
         }
 
         app.render();
