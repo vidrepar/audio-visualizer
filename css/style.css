@@ -84,10 +84,16 @@ progress[aria-valuenow]:before  {
 
 */
 
-.play-btn{
+.play-btn {
 
-    height: 100px;
-    width: 100px;
-    background-color: #000;
+    height: 70px;
+    width: 70px;
+    background-color: #6495ed;
 
+}
+
+.stop-btn {
+    height: 70px;
+    width: 70px;
+    background-color: #ffA500;
 }

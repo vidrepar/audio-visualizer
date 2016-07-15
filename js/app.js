@@ -78,7 +78,11 @@ var app = {
 
         // Play & Stop button
         app.$playBtn = $('<div>', { class:'play-btn' });
-        $('.song-progress-container').append(app.$playBtn);
+        //app.$stopBtn = $('<div>', { class:'stop-btn' });
+
+        $('.song-progress-container')
+            .append(app.$playBtn)
+            .append(app.$stopBtn);
 
         app.$playBtn.on('click', function () {
             console.log('Play');
@@ -162,7 +166,7 @@ var app = {
 
             console.log('sound file loaded!');
 
-            console.log(app.sound);
+            console.log(app.analyser.context.listener);
 
             app.sound.play();
             app.animate();
@@ -201,7 +205,7 @@ var app = {
         }
         var fttAvg = Math.floor(fttSum/(12*2*2));
 
-        console.log(fttAvg);
+        //console.log(fttAvg);
 
         // Get current time of a song
         //console.log(app.analyser.context.currentTime);
@@ -242,10 +246,14 @@ var app = {
             }
 
             // Stop animation
-            if(app.progressValue === app.progressMax){
+            if(app.progressValue >= app.progressMax){
                 console.log('SAME SAME SAME');
                 app.sound.stop();
-                app.sound.play();
+                app.progressValue = 0;
+
+                console.log(app.analyser.context.currentTime);
+
+                //app.sound.play();
             }
 
             /*if(app.progressValue === 3){
