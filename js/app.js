@@ -110,8 +110,8 @@ var app = {
         }
 
         // Reduce array to apx 450 objects
-        for (var i = 0; i < app.newHeartVerticesArray.length; i+=6) {
-            app.reducedHeartVericesArray.push(app.newHeartVerticesArray[i]);
+        for (var j = 0; j < app.newHeartVerticesArray.length; j+=6) {
+            app.reducedHeartVericesArray.push(app.newHeartVerticesArray[j]);
         }
 
     },
@@ -125,8 +125,16 @@ var app = {
                 y:app.reducedHeartVericesArray[i].y,
                 z:app.reducedHeartVericesArray[i].z,
                 onComplete:app.onCompleteFunction
-            })
+            });
+
         }
+
+        TweenLite.to(app.particlesGroup.rotation, 2, {
+            x:0,
+            y:0,
+            z:0,
+            onComplete:app.onCompleteFunction
+        });
 
     },
     morphToBox:function () {
@@ -137,8 +145,17 @@ var app = {
                 y:app.boxVerticesArray[i].y,
                 z:app.boxVerticesArray[i].z,
                 onComplete:app.onCompleteFunction
-            })
+            });
+
+
         }
+
+        TweenLite.to(app.particlesGroup.rotation, 2, {
+            x:5,
+            y:5,
+            z:5,
+            onComplete:app.onCompleteFunction
+        });
 
         app.particlesGroup.scale.x = 1.5;
         app.particlesGroup.scale.y = 1.5;
@@ -153,8 +170,16 @@ var app = {
                 y:app.sphereVerticesArray[i].y,
                 z:app.sphereVerticesArray[i].z,
                 onComplete:app.onCompleteFunction
-            })
+            });
+
         }
+
+        TweenLite.to(app.particlesGroup.rotation, 3, {
+            x:0.5,
+            y:0.5,
+            z:0.5,
+            onComplete:app.onCompleteFunction
+        });
 
     },
     drawParticles: function () {
@@ -228,24 +253,21 @@ var app = {
 
         requestAnimationFrame(app.animate);
 
-        // Frequency data
+        // Frequency data from 20Hz to 22050Hz translated into 8192 values in an array
         app.analyser.getByteFrequencyData(app.dataArray);
 
         // Average frequency
         elmt = app.dataArray;
-        var fttSum = 0;
-        for( var i = 0; i < 12*2*2; i++ ){
-            fttSum += parseInt( elmt[i], 10 ); //don't forget to add the base
+        var fftSum = 0;
+
+        // Take the sub-bass and bass values from the array and calculate avearge fft
+        var bassValNums = 92;
+        for( var i = 0; i < bassValNums; i++ ){
+            fftSum += parseInt( elmt[i], 10 ); //don't forget to add the base
         }
-        var fttAvg = Math.floor(fttSum/(12*2*2));
+        var fftAvg = Math.floor(fftSum/bassValNums);
 
-        //console.log(fttAvg);
-
-        // Get current time of a song
-        //console.log(app.analyser.context.currentTime);
-
-        // Get song duration
-        //console.log(app.sound.sourceNode.buffer.duration);
+        console.log(fftAvg);
 
         app.progressValue = Math.floor(app.analyser.context.currentTime);
         app.progressMax = Math.floor(app.sound.sourceNode.buffer.duration);
@@ -265,54 +287,33 @@ var app = {
         if(app.isAnimation){
 
             // Morphes
-            //Low tones = apx 210
-            if (fttAvg > 200) {
+            if (fftAvg > 187) {
 
-                //app.morphToHeart();
                 app.morphToSphere();
-                app.particlesGroup.rotation.x += 0.1;
-                app.particlesGroup.rotation.y += 0.1;
 
-            } else if(fttAvg > 180 && fttAvg < 200){
+            } else if(fftAvg > 170 && fftAvg < 187){
 
                 app.morphToHeart();
-                app.particlesGroup.rotation.x += 0.3;
-                app.particlesGroup.rotation.y += 0;
-                app.particlesGroup.rotation.z += 0;
-                app.particlesGroup.position.x += 0; // Not working
-                app.particlesGroup.position.y += 0; // Not working
-                app.particlesGroup.position.z += 0; // Not working
 
 
-            } else if(fttAvg > 0 && fttAvg < 180){
+            } else if(fftAvg > 0 && fftAvg < 170){
 
                 app.morphToBox();
-                app.particlesGroup.rotation.x += 0.4;
-                app.particlesGroup.rotation.y += 0.1;
-                app.particlesGroup.rotation.z += 0;
-
 
             }
 
             // Stop animation
-            if(app.progressValue >= app.progressMax){
-                //console.log('SAME SAME SAME');
+            if(app.progressValue === app.progressMax){
+
                 app.sound.stop();
                 app.progressValue = 0;
+                app.morphToHeart();
 
-                //console.log(app.analyser.context.currentTime);
+                //app.particlesGroup.rotation.x += 0;// Not working
+                //app.particlesGroup.rotation.y += 0;// Not working
+                //app.particlesGroup.rotation.z += 0;// Not working
 
-                //app.sound.play();
             }
-
-            /*if(app.progressValue === 3){
-
-                app.sound.stop();
-
-            } else if (app.progressValue === 13){
-                app.sound.play();
-            }*/
-
         }
 
         app.render();
