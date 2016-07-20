@@ -34,7 +34,7 @@ var app = {
     progressValue:null,
     progressMax:null,
     $playBtn:null,
-    $stopBtn:null,
+    $pauseBtn:null,
 
     init: function () {
 
@@ -92,21 +92,43 @@ var app = {
             console.log('Get the value!');
         });
 
-        // Play & Stop button
+        // Play & Pause button
         app.$playBtn = $('<div>', { class:'play-btn' });
-        app.$stopBtn = $('<div>', { class:'stop-btn' });
+        app.$pauseBtn = $('<div>', { class:'pause-btn' });
 
-        $('.song-progress-container')
-            .append(app.$playBtn)
-            .append(app.$stopBtn);
+        $('.buttons-bg')
+            .append(app.$pauseBtn)
+            .append(app.$playBtn);
+
+        app.$pauseBtn.hide();
+        app.$playBtn.on('click', function () {
+            app.$playBtn.hide(0, function () {
+               app.$pauseBtn.show(0, function () {
+                   app.$pauseBtn.on('click', function () {
+                       app.$pauseBtn.hide(0, function () {
+                           app.$playBtn.show(0);
+                       });
+                   });
+               });
+            });
+        });
+
+        //$(".pause-btn").toggleClass('pause-btn play-btn');
+
+
 
         app.$playBtn.on('click', function () {
             console.log('Play');
+
+            app.$playBtn.hide(function () {
+                app.$pauseBtn.show();
+            });
         });
 
-        app.$stopBtn.on('click', function () {
-            console.log('Stop');
+        app.$pauseBtn.on('click', function () {
+            console.log('Pause');
         });
+
 
     },
     onCompleteFunction:function () {
@@ -250,19 +272,30 @@ var app = {
         // Audio setup
         app.sound = new Pizzicato.Sound({
             source: 'file',
-            //options: { path: 'assets/audio/song-' + Math.ceil(Math.random()*4) + '.mp3' }
-            options: { path: 'assets/audio/song-3.mp3' }
+            //options: { path: 'assets/audio/song-' + Math.ceil(Math.random()*5) + '.mp3' }
+            options: { path: 'assets/audio/song-4.mp3' }
         }, function() {
 
             console.log('sound file loaded!');
 
-            console.log(app.analyser.context.listener);
+            //app.sound.play();
 
-            app.sound.play();
+            app.$playBtn.on('click', function () {
+                app.sound.play();
+                console.log(app.analyser.context.currentTime);
+            });
+
+            app.$pauseBtn.on('click', function () {
+                app.sound.stop();
+                app.analyser.context.currentTime = 0;
+                console.log(app.analyser.context.currentTime);
+            });
+
             app.animate();
-            console.log(app.sound.sourceNode.buffer.duration);
 
         });
+
+
 
         app.analyser = app.sound.getAnalyser();
         app.analyser.fftSize = 256*2*2*2*2*2;
@@ -272,7 +305,7 @@ var app = {
         app.dataArray = new Uint8Array(app.analyser.fftSize);
 
         console.log(app.analyser.context);
-        console.log(app.sound.sourceNode.buffer.duration);
+        console.log(app.sound);
 
     },
     render:function () {
@@ -289,16 +322,16 @@ var app = {
 
         // Average frequency
         elmt = app.dataArray;
-        var fftSum = 0;
+        var bassSum = 0;
 
         // Take the sub-bass and bass values from the array and calculate avearge fft
         var bassValNums = 92;
         for( var i = 0; i < bassValNums; i++ ){
-            fftSum += parseInt( elmt[i], 10 ); //don't forget to add the base
+            bassSum += parseInt( elmt[i], 10 ); //don't forget to add the base
         }
-        var fftAvg = Math.floor(fftSum/bassValNums);
+        var bassAvg = Math.floor(bassSum/bassValNums);
 
-        //console.log(fftAvg);
+        //console.log(bassAvg);
 
         app.progressValue = app.analyser.context.currentTime;
         app.progressMax = app.sound.sourceNode.buffer.duration;
@@ -325,29 +358,62 @@ var app = {
         if(app.isAnimation){
 
             // Morphes
-            if (fftAvg > 187) {
+            if (bassAvg === 170 || bassAvg === 185) {
 
                 app.morphToSphere();
 
-            } else if(fftAvg > 170 && fftAvg < 187){
+            } else if(bassAvg > 115 && bassAvg < 170 || bassAvg === 180){
 
                 app.morphToHeart();
 
 
-            } else if(fftAvg > 0 && fftAvg < 170){
+            } else if(bassAvg > 0 && bassAvg < 115 || bassAvg === 125 || bassAvg === 135 || bassAvg === 145){
 
                 app.morphToBox();
 
             }
 
             // Stop animation
-            if(app.progressValue === app.progressMax){
+            if(app.progressValue >= app.progressMax){
 
-                app.sound.stop();
-                app.progressValue = 0;
+                app.analyser.context.currentTime = 0;
+
+                app.$progress.attr({
+                    value: 0,
+                    max: app.progressMax
+                });
+
                 app.morphToHeart();
 
             }
+        }
+
+        app.$pauseBtn.on('click', function () {
+            console.log('test');
+        });
+
+        app.sound.sourceNode.context.currentTime = 0;
+        app.sound.fadeNode.context.currentTime = 0;
+        app.analyser.context.currentTime = 0;
+
+        //console.log(app.analyser.context.currentTime);
+        //console.log(app.sound.fadeNode.context.currentTime);
+        //console.log(app.sound.sourceNode.context.currentTime);
+
+        // Stop animation
+        if(app.progressValue >= 5){
+
+            //console.log('test');
+
+            //app.sound.sourceNode.context.currentTime = 0;
+
+            app.$progress.attr({
+                value: 0,
+                max: app.progressMax
+            });
+
+            app.morphToHeart();
+
         }
 
         app.render();

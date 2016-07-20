@@ -2,18 +2,9 @@ body{
     margin: 0;
 }
 
-.buttons-bg{
-    background-color: #d3d3d3;
-    height: 100px;
-    width: 100%;
-    position: absolute;
-    bottom: 0;
-    opacity: 0.5;
-}
-
 /*
 
-    progress bar
+    PROGRESS BAR
 
 */
 
@@ -82,20 +73,35 @@ progress[aria-valuenow]:before  {
 
 /*
 
-    play & stop button
+    PLAY & STOP BUTTON
 
 */
 
-.play-btn {
+.buttons-bg{
+    height: 100px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    opacity: 0.5;
+    text-align: center;
+}
+
+.buttons-bg > *{
+    display: inline-block;
+}
+
+.play-btn, .pause-btn  {
 
     height: 70px;
     width: 70px;
-    background-color: #6495ed;
+    border-radius:35px;
 
 }
 
-.stop-btn {
-    height: 70px;
-    width: 70px;
+.play-btn {
+    background-color: #6495ed;
+}
+
+.pause-btn {
     background-color: #ffA500;
 }
