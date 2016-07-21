@@ -79,6 +79,7 @@ var app = {
         }, 2000);
 
     },
+    playToggleButton:null,
     drawButtons:function () {
 
         // Controllers' background
@@ -92,49 +93,29 @@ var app = {
             console.log('Get the value!');
         });
 
-        // Play & Pause button
-        app.$playBtn = $('<div>', { class:'play-btn' });
-        app.$pauseBtn = $('<div>', { class:'pause-btn' });
 
-        $('.buttons-bg')
-            .append(app.$pauseBtn)
-            .append(app.$playBtn);
+        app.$playToggleButton = $('<div>', { class:'play-btn' });
 
-        app.$pauseBtn.hide();
-        app.$playBtn.on('click', function () {
-            app.$playBtn.hide(0, function () {
-               app.$pauseBtn.show(0, function () {
-                   app.$pauseBtn.on('click', function () {
-                       app.$pauseBtn.hide(0, function () {
-                           app.$playBtn.show(0);
-                       });
-                   });
-               });
-            });
-        });
+        $('.buttons-bg').append(app.$playToggleButton);
 
-        //$(".pause-btn").toggleClass('pause-btn play-btn');
+        /*app.$playToggleButton.on('click', function(){
+            $(this).toggleClass('pause-btn');
 
+            if($(this).hasClass('pause-btn')){
+                console.log('Play');
+                app.sound.play();
+            } else{
+                console.log('Pause');
+                app.sound.pause();
+            }
 
-
-        app.$playBtn.on('click', function () {
-            console.log('Play');
-
-            app.$playBtn.hide(function () {
-                app.$pauseBtn.show();
-            });
-        });
-
-        app.$pauseBtn.on('click', function () {
-            console.log('Pause');
-        });
-
+        });*/
 
     },
     onCompleteFunction:function () {
 
         app.isAnimation = false;
-        console.log('Function executed');
+        //console.log('Function executed');
 
     },
     newHeartVerticesArray:[],
@@ -267,6 +248,8 @@ var app = {
         app.scene.add(app.particlesGroup);
 
     },
+    timer:null,
+    currentTime:null,
     setupAudio:function () {
 
         // Audio setup
@@ -278,17 +261,37 @@ var app = {
 
             console.log('sound file loaded!');
 
-            //app.sound.play();
+            app.timer = new Stopwatch();
 
-            app.$playBtn.on('click', function () {
-                app.sound.play();
-                console.log(app.analyser.context.currentTime);
-            });
 
-            app.$pauseBtn.on('click', function () {
-                app.sound.stop();
-                app.analyser.context.currentTime = 0;
-                console.log(app.analyser.context.currentTime);
+            /*var ms = app.timer.previousElapsed;
+            var x = ms / 1000;
+            app.currentTime = x % 60;
+            console.log(app.currentTime);
+            */
+
+
+
+            app.$playToggleButton.on('click', function(){
+                $(this).toggleClass('pause-btn');
+
+                setInterval(function() {
+                    var ms = app.timer.getElapsed();
+                    app.currentTime = ms / 1000;
+
+                }, 250);
+
+                if($(this).hasClass('pause-btn')){
+                    console.log('Play');
+                    app.sound.play();
+                    app.timer.start();
+
+                } else{
+                    console.log('Pause');
+                    app.sound.pause();
+                    app.timer.pause();
+                }
+
             });
 
             app.animate();
@@ -304,8 +307,8 @@ var app = {
         //app.dataArray = new Uint8Array(app.bufferLength);
         app.dataArray = new Uint8Array(app.analyser.fftSize);
 
-        console.log(app.analyser.context);
-        console.log(app.sound);
+        //console.log(app.analyser.context);
+        //console.log(app.sound);
 
     },
     render:function () {
@@ -316,6 +319,9 @@ var app = {
     animate:function () {
 
         requestAnimationFrame(app.animate);
+
+        //app.timer.start();
+        //console.log(app.timer.previousElapsed);
 
         // Frequency data from 20Hz to 22050Hz translated into 8192 values in an array
         app.analyser.getByteFrequencyData(app.dataArray);
@@ -337,7 +343,7 @@ var app = {
         app.progressMax = app.sound.sourceNode.buffer.duration;
 
         app.$progress.attr({
-            value: app.progressValue,
+            value: app.currentTime,
             max: app.progressMax
         });
 
@@ -374,23 +380,15 @@ var app = {
             }
 
             // Stop animation
-            if(app.progressValue >= app.progressMax){
+            if(app.currentTime >= app.progressMax){
 
-                app.analyser.context.currentTime = 0;
-
-                app.$progress.attr({
-                    value: 0,
-                    max: app.progressMax
-                });
+                app.currentTime = 0;
+                app.$playToggleButton.removeClass('stop-btn');
 
                 app.morphToHeart();
 
             }
         }
-
-        app.$pauseBtn.on('click', function () {
-            console.log('test');
-        });
 
         app.sound.sourceNode.context.currentTime = 0;
         app.sound.fadeNode.context.currentTime = 0;
@@ -401,7 +399,7 @@ var app = {
         //console.log(app.sound.sourceNode.context.currentTime);
 
         // Stop animation
-        if(app.progressValue >= 5){
+        /*if(app.progressValue >= app.progressMax){
 
             //console.log('test');
 
@@ -414,7 +412,7 @@ var app = {
 
             app.morphToHeart();
 
-        }
+        }*/
 
         app.render();
     }
