@@ -87,8 +87,6 @@ var app = {
         });
 
         app.reduceHeartArray();
-        app.drawParticles();
-        app.drawButtons();
 
         setInterval(function () {
 
@@ -107,8 +105,12 @@ var app = {
         app.$progress = $('<progress>');
         $('body').append($('<div>', { class:'song-progress-container' }).append(app.$progress));
 
-        app.$playToggleButton = $('<div>', { class:'play-btn' });
+        app.$playToggleButton = $('<div>', { class:'icon-play' });
         $('.buttons-bg').append(app.$playToggleButton);
+
+        //$('.icon-play').append($('<span>', { class:'icon-play' }));
+
+        //.icon-play
 
     },
     onCompleteFunction:function () {
@@ -247,14 +249,37 @@ var app = {
         app.scene.add(app.particlesGroup);
 
     },
+    aboutInformation: function () {
+
+        $('body').append($('<div>', { class:'about-container' }));
+
+        var songTitle = 'Riptide';
+        var songAuthor = 'Vance Joy';
+        var authorName = 'Vid Repar';
+        var projectGithub = 'github.com/vidrepar/audio-visualizer';
+        var authorContact = 'vidrepar.com/contact';
+
+        $('.about-container')
+            .append('<div>song: ' + songTitle + '</div>')
+            .append('<div>musician: ' + songAuthor + '</div>')
+            .append('<div>author: ' + authorName + '</div>')
+            .append('<div>contact: ' + '<a href="http://www.' + authorContact + '">' + authorContact + '</a>' + '</div>')
+            .append('<div>github: ' + '<a href="https://www.' + projectGithub + '">' + projectGithub + '</a>' + '</div>');
+
+        //https://github.com/vidrepar/audio-visualizer
+
+    },
     setupAudio:function () {
 
         // Audio setup
         app.sound = new Pizzicato.Sound({
             source: 'file',
-            //options: { path: 'assets/audio/song-' + Math.ceil(Math.random()*5) + '.mp3' }
-            options: { path: 'assets/audio/song-4.mp3' }
+            options: { path: 'assets/audio/song.mp3' }
         }, function() {
+
+            app.drawParticles();
+            app.drawButtons();
+            app.aboutInformation();
 
             // Intro hack
             console.log('sound file loaded!');
@@ -264,16 +289,17 @@ var app = {
             app.timer = new Stopwatch();
 
             app.$playToggleButton.on('click', function(){
-                $(this).toggleClass('pause-btn');
+                $(this).toggleClass('icon-pause');
 
                 app.currentTimeInterval();
 
-                if($(this).hasClass('pause-btn')){
+                if($(this).hasClass('icon-pause')){
                     console.log('Play');
                     app.sound.play();
                     app.timer.start();
                 } else{
                     console.log('Pause');
+                    app.morphToHeart();
                     app.sound.pause();
                     app.timer.pause();
                 }
@@ -286,9 +312,9 @@ var app = {
                     var ms = app.timer.getElapsed();
                     app.currentTime = ms / 1000;
 
-                    if(app.currentTime > app.progressMax && app.$playToggleButton.hasClass('pause-btn')){
+                    if(app.currentTime > app.progressMax && app.$playToggleButton.hasClass('icon-pause')){
                         app.morphToHeart();
-                        app.$playToggleButton.removeClass('pause-btn');
+                        app.$playToggleButton.removeClass('icon-pause');
                         app.sound.stop();
                         app.timer.stop();
 
@@ -308,10 +334,6 @@ var app = {
         //console.log(app.bufferLength);
         //app.dataArray = new Uint8Array(app.bufferLength);
         app.dataArray = new Uint8Array(app.analyser.fftSize);
-
-        //console.log(app.analyser.context);
-        //console.log(app.sound);
-
     },
     render:function () {
 
@@ -335,8 +357,6 @@ var app = {
             bassSum += parseInt( elmt[i], 10 ); //don't forget to add the base
         }
         var bassAvg = Math.floor(bassSum/bassValNums);
-
-        //console.log(bassAvg);
 
         app.progressValue = app.analyser.context.currentTime;
         app.progressMax = app.sound.sourceNode.buffer.duration;
