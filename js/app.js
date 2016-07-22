@@ -93,23 +93,8 @@ var app = {
             console.log('Get the value!');
         });
 
-
         app.$playToggleButton = $('<div>', { class:'play-btn' });
-
         $('.buttons-bg').append(app.$playToggleButton);
-
-        /*app.$playToggleButton.on('click', function(){
-            $(this).toggleClass('pause-btn');
-
-            if($(this).hasClass('pause-btn')){
-                console.log('Play');
-                app.sound.play();
-            } else{
-                console.log('Pause');
-                app.sound.pause();
-            }
-
-        });*/
 
     },
     onCompleteFunction:function () {
@@ -250,6 +235,7 @@ var app = {
     },
     timer:null,
     currentTime:null,
+    currentTimeInterval:null,
     setupAudio:function () {
 
         // Audio setup
@@ -263,29 +249,15 @@ var app = {
 
             app.timer = new Stopwatch();
 
-
-            /*var ms = app.timer.previousElapsed;
-            var x = ms / 1000;
-            app.currentTime = x % 60;
-            console.log(app.currentTime);
-            */
-
-
-
             app.$playToggleButton.on('click', function(){
                 $(this).toggleClass('pause-btn');
 
-                setInterval(function() {
-                    var ms = app.timer.getElapsed();
-                    app.currentTime = ms / 1000;
-
-                }, 250);
+                app.currentTimeInterval();
 
                 if($(this).hasClass('pause-btn')){
                     console.log('Play');
                     app.sound.play();
                     app.timer.start();
-
                 } else{
                     console.log('Pause');
                     app.sound.pause();
@@ -293,6 +265,25 @@ var app = {
                 }
 
             });
+
+
+
+            app.currentTimeInterval = function () {
+
+                setInterval(function() {
+                    var ms = app.timer.getElapsed();
+                    app.currentTime = ms / 1000;
+
+                    if(app.currentTime > app.progressMax && app.$playToggleButton.hasClass('pause-btn')){
+                        app.$playToggleButton.removeClass('pause-btn');
+                        app.sound.stop();
+                        app.timer.stop();
+
+                    }
+                    
+                }, 250);
+
+            };
 
             app.animate();
 
@@ -379,42 +370,15 @@ var app = {
 
             }
 
-            // Stop animation
-            if(app.currentTime >= app.progressMax){
-
-                app.currentTime = 0;
-                app.$playToggleButton.removeClass('stop-btn');
-
-                app.morphToHeart();
-
-            }
         }
 
-        app.sound.sourceNode.context.currentTime = 0;
-        app.sound.fadeNode.context.currentTime = 0;
-        app.analyser.context.currentTime = 0;
-
-        //console.log(app.analyser.context.currentTime);
-        //console.log(app.sound.fadeNode.context.currentTime);
-        //console.log(app.sound.sourceNode.context.currentTime);
-
-        // Stop animation
-        /*if(app.progressValue >= app.progressMax){
-
-            //console.log('test');
-
-            //app.sound.sourceNode.context.currentTime = 0;
-
-            app.$progress.attr({
-                value: 0,
-                max: app.progressMax
-            });
-
-            app.morphToHeart();
-
-        }*/
-
         app.render();
+
+    },
+    destroy: function () {
+
+        console.log('Destroy');
+
     }
 
 };
