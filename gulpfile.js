@@ -26,9 +26,10 @@ gulp.task('css', function () {
 
 gulp.task('js', function () {
 
-    domSrc({ file:'index.html', selector:'script', attribute:'src' })
+    gulp.src(['js/**/*.js', '!js/**/*.min.js', '!bower_components/**/*.js'])
         .pipe(jshint())
         .pipe(jshint.reporter('default'))
+        //.pipe(gulpIgnore.include(condition))
         .pipe(uglify())
         .pipe(concat('app.full.min.js'))
         .pipe(gulp.dest('dist/'));
@@ -41,7 +42,7 @@ gulp.task('html', function () {
         .pipe(cheerio(function ($) {
 
             $('link').remove();
-            $('script').remove();
+            $('script[src^="js/"]').remove();
 
             $('head').append('<link rel="stylesheet" href="app.full.min.css">');
             $('body').append('<script src="app.full.min.js"></script>');

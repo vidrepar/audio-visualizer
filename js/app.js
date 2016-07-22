@@ -225,7 +225,7 @@ var app = {
 
             var material = new THREE.SpriteCanvasMaterial({
                 color   : c,
-                program : function (context) { // program = shape you want this material to take
+                program : function (context) { 
                     context.beginPath();
                     context.arc(0,0,1,0,PI2,true);
                     context.fill();
