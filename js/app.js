@@ -38,10 +38,14 @@ var app = {
 
     init: function () {
 
+        console.log($(window).width());
+        console.log($(document).width());
+        console.log(document.body.clientWidth);
+
         // Camera setup
         app.camera = new THREE.PerspectiveCamera(
             75,
-            $(window).width()/$(window).height(),
+            ($(window).width())/($(window).height()),
             1,
             10000);
 
@@ -53,7 +57,7 @@ var app = {
         // Renderer setup
         app.renderer = new THREE.CanvasRenderer();
         app.renderer.setPixelRatio(window.devicePixelRatio);
-        app.renderer.setSize($(window).width(), $(window).height());
+        app.renderer.setSize($(window).innerWidth(), $(window).innerHeight());
         app.renderer.setClearColorHex(0xffffff, 1);
 
         // Append to HTML
@@ -135,9 +139,9 @@ var app = {
 
         }
 
-        TweenLite.to(app.particlesGroup.rotation, 1, {
-            x:0,
-            y:0,
+        TweenLite.to(app.particlesGroup.rotation, 3, {
+            x:-0.4,
+            y:0.2,
             z:0,
             onComplete:app.onCompleteFunction
         });
@@ -265,8 +269,6 @@ var app = {
                 }
 
             });
-
-
 
             app.currentTimeInterval = function () {
 
