@@ -21,7 +21,7 @@ var app = {
 
     // Colors
     COLORS:[0x4285F4, 0x34A853, 0xFBBC05, 0xEA4335],
-    COLORS_RGBA:[{r:255, g:255, b:255, a:1}, {r:0, g:0, b:255, a:1}],
+    COLORS_RGBA:[{r:255, g:255, b:255, a:1}, {r:206, g:51, b:51, a:1}, {r:0, g:0, b:255, a:1}, {r:0, g:0, b:0, a:1}],
     color:{
         current:{r:25, g:100, b:180, a:1}
     },
@@ -58,7 +58,7 @@ var app = {
         app.renderer = new THREE.CanvasRenderer();
         app.renderer.setPixelRatio(window.devicePixelRatio);
         app.renderer.setSize($(window).innerWidth(), $(window).innerHeight());
-        app.renderer.setClearColorHex(0xff717e, 1);
+        app.renderer.setClearColor(0xff717e, 1);
 
         // Append to HTML
 
@@ -157,7 +157,7 @@ var app = {
         });
 
         // Heart color
-        var c = rgbToHex(215, 40, 40);
+        var c = rgbToHex(0, 0, 255);
         for (var j = 0; j < app.particlesArray.length; j++) {
             app.particlesArray[j].material.color.set(c);
         }
@@ -287,6 +287,7 @@ var app = {
                     app.currentTime = ms / 1000;
 
                     if(app.currentTime > app.progressMax && app.$playToggleButton.hasClass('pause-btn')){
+                        app.morphToHeart();
                         app.$playToggleButton.removeClass('pause-btn');
                         app.sound.stop();
                         app.timer.stop();

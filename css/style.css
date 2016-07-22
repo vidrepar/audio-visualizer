@@ -54,22 +54,22 @@ progress::-webkit-progress-bar {
 
 /* IE10 */
 progress {
-    color: #f65050;
+    color: #0000FF;
 }
 
 /* Firefox */
 progress::-moz-progress-bar {
-    background: #f65050;
+    background: #0000FF;
 }
 
 /* Chrome */
 progress::-webkit-progress-value {
-    background: #f65050;
+    background: #0000FF;
 }
 
 /* Polyfill */
 progress[aria-valuenow]:before  {
-    background: #f65050;
+    background: #0000FF;
 }
 
 /*
