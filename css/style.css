@@ -44,32 +44,32 @@ progress[role] strong {
 
 progress,                          /* Firefox  */
 progress[role][aria-valuenow] {    /* Polyfill */
-    background: #ffeeee !important; /* !important is needed by the polyfill */
+    background: #ff717e !important; /* !important is needed by the polyfill */
 }
 
 /* Chrome */
 progress::-webkit-progress-bar {
-    background: #ffeeee;
+    background: #ff717e;
 }
 
 /* IE10 */
 progress {
-    color: black;
+    color: #f65050;
 }
 
 /* Firefox */
 progress::-moz-progress-bar {
-    background: black;
+    background: #f65050;
 }
 
 /* Chrome */
 progress::-webkit-progress-value {
-    background: black;
+    background: #f65050;
 }
 
 /* Polyfill */
 progress[aria-valuenow]:before  {
-    background: black;
+    background: #f65050;
 }
 
 /*

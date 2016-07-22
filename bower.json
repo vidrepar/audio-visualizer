@@ -19,6 +19,7 @@
     "jquery": "^3.1.0",
     "p5.js": "p5js#^0.5.2",
     "pizzicato": "^0.2.0",
-    "gsap": "greensock#^1.18.5"
+    "gsap": "greensock#^1.18.5",
+    "bootstrap": "^3.3.6"
   }
 }

@@ -21,7 +21,7 @@ var app = {
 
     // Colors
     COLORS:[0x4285F4, 0x34A853, 0xFBBC05, 0xEA4335],
-    COLORS_RGBA:[{r:25, g:100, b:180, a:1}, {r:210, g:15, b:255, a:1}, {r:0, g:40, b:255, a:1}],
+    COLORS_RGBA:[{r:255, g:255, b:255, a:1}, {r:0, g:0, b:255, a:1}],
     color:{
         current:{r:25, g:100, b:180, a:1}
     },
@@ -36,11 +36,11 @@ var app = {
     $playBtn:null,
     $pauseBtn:null,
 
-    init: function () {
+    timer:null,
+    currentTime:null,
+    currentTimeInterval:null,
 
-        console.log($(window).width());
-        console.log($(document).width());
-        console.log(document.body.clientWidth);
+    init: function () {
 
         // Camera setup
         app.camera = new THREE.PerspectiveCamera(
@@ -58,7 +58,7 @@ var app = {
         app.renderer = new THREE.CanvasRenderer();
         app.renderer.setPixelRatio(window.devicePixelRatio);
         app.renderer.setSize($(window).innerWidth(), $(window).innerHeight());
-        app.renderer.setClearColorHex(0xffffff, 1);
+        app.renderer.setClearColorHex(0xff717e, 1);
 
         // Append to HTML
 
@@ -71,6 +71,20 @@ var app = {
         * */
         app.container.append(app.renderer.domElement);
         $('body').append(app.container);
+
+        $(window).on('resize', function() {
+
+
+            var windowWidth = $(window).width();
+            $(app.renderer.domElement).css('width', windowWidth);
+
+            setTimeout(function(){
+                alert("Hey, page will reload for a better experience.");
+                location.reload();
+            }, 3000);
+
+
+        });
 
         app.reduceHeartArray();
         app.drawParticles();
@@ -92,10 +106,6 @@ var app = {
         // Progress bar
         app.$progress = $('<progress>');
         $('body').append($('<div>', { class:'song-progress-container' }).append(app.$progress));
-
-        app.$progress.on('mouseover', function () {
-            console.log('Get the value!');
-        });
 
         app.$playToggleButton = $('<div>', { class:'play-btn' });
         $('.buttons-bg').append(app.$playToggleButton);
@@ -237,9 +247,6 @@ var app = {
         app.scene.add(app.particlesGroup);
 
     },
-    timer:null,
-    currentTime:null,
-    currentTimeInterval:null,
     setupAudio:function () {
 
         // Audio setup
@@ -249,7 +256,10 @@ var app = {
             options: { path: 'assets/audio/song-4.mp3' }
         }, function() {
 
+            // Intro hack
             console.log('sound file loaded!');
+            app.sound.play();
+            app.sound.pause();
 
             app.timer = new Stopwatch();
 
@@ -291,8 +301,6 @@ var app = {
 
         });
 
-
-
         app.analyser = app.sound.getAnalyser();
         app.analyser.fftSize = 256*2*2*2*2*2;
         app.bufferLength = app.analyser.frequencyBinCount;
@@ -312,9 +320,6 @@ var app = {
     animate:function () {
 
         requestAnimationFrame(app.animate);
-
-        //app.timer.start();
-        //console.log(app.timer.previousElapsed);
 
         // Frequency data from 20Hz to 22050Hz translated into 8192 values in an array
         app.analyser.getByteFrequencyData(app.dataArray);
@@ -387,11 +392,11 @@ var app = {
 
 
 
-app.init();
 app.setupAudio();
+app.init();
 
 
-
+// Color interpolation
 function componentToHex(c) {
     var hex = Math.floor(c).toString(16);
     return hex.length == 1 ? "0" + hex : hex;
