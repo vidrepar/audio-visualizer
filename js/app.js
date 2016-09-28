@@ -262,7 +262,7 @@ var app = {
         $('.about-container')
             .append('<div>song: ' + songTitle + '</div>')
             .append('<div>musician: ' + songAuthor + '</div>')
-            .append('<div>author: ' + authorName + '</div>')
+            .append('<div>creative professional: ' + authorName + '</div>')
             .append('<div>contact: ' + '<a href="http://www.' + authorContact + '">' + authorContact + '</a>' + '</div>')
             .append('<div>github: ' + '<a href="https://www.' + projectGithub + '">' + projectGithub + '</a>' + '</div>');
 
