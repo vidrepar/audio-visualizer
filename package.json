@@ -5,9 +5,13 @@
   "main": "index.html",
   "dependencies": {
     "express": "^4.14.0",
-    "gulp": "^3.9.1",
+    "gsap": "1.18.5",
+    "jquery": "3.1.0",
+    "p5": "0.5.2",
+    "pizzicato": "0.3.2",
     "serve-index": "^1.8.0",
-    "serve-static": "^1.11.1"
+    "serve-static": "^1.11.1",
+    "three": "0.84.0"
   },
   "devDependencies": {
     "browser-sync": "^2.13.0",
@@ -24,6 +28,8 @@
     "jshint": "^2.9.2"
   },
   "scripts": {
+    "start": "npx gulp build && npx gulp serve",
+    "build": "npx gulp build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

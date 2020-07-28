@@ -1,6 +1,4 @@
-
 var app = {
-
     scene   : null,
     camera  : null,
     renderer: null,
@@ -257,13 +255,11 @@ var app = {
         var songAuthor = 'Vance Joy';
         var authorName = 'Vid Repar';
         var projectGithub = 'github.com/vidrepar/audio-visualizer';
-        var authorContact = 'vidrepar.com/contact';
 
         $('.about-container')
             .append('<div>song: ' + songTitle + '</div>')
             .append('<div>musician: ' + songAuthor + '</div>')
-            .append('<div>creative professional: ' + authorName + '</div>')
-            .append('<div>contact: ' + '<a href="http://www.' + authorContact + '">' + authorContact + '</a>' + '</div>')
+            .append('<div>dev: ' + authorName + '</div>')
             .append('<div>github: ' + '<a href="https://www.' + projectGithub + '">' + projectGithub + '</a>' + '</div>');
 
         //https://github.com/vidrepar/audio-visualizer
@@ -286,7 +282,9 @@ var app = {
             app.sound.play();
             app.sound.pause();
 
-            app.timer = new Stopwatch();
+            // TODO: Re-implement stopwatch functionality
+            // app.timer = new Stopwatch();
+            app.timer = {};
 
             app.$playToggleButton.on('click', function(){
                 $(this).toggleClass('icon-pause');
