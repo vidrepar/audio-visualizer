@@ -29,7 +29,7 @@
   },
   "scripts": {
     "start": "npx gulp build && npx gulp serve",
-    "build": "npx gulp build",
+    "build": "nvm use && npx gulp build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
