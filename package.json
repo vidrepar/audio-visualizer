@@ -6,7 +6,7 @@
   "dependencies": {
     "express": "^4.14.0",
     "gsap": "1.18.5",
-    "jquery": "3.1.0",
+    "jquery": "3.5.0",
     "p5": "0.5.2",
     "pizzicato": "0.3.2",
     "serve-index": "^1.8.0",
