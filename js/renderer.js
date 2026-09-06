@@ -45,9 +45,10 @@ export class ParticleRenderer {
 
     /**
      * Draw `particles` (objects with x/y/z) rotated by the Euler angles in
-     * `rotation`, in the given CSS colour.
+     * `rotation`, in the given CSS colour. `swell` scales the cloud about its
+     * centre, which is how a beat is made visible.
      */
-    render(particles, rotation, color) {
+    render(particles, rotation, color, swell) {
         var ctx = this.context;
 
         ctx.fillStyle = this.background;
@@ -68,6 +69,8 @@ export class ParticleRenderer {
         var m21 = sinX * cosZ + cosX * sinZ * sinY;
         var m22 = cosX * cosY;
 
+        var scale = GROUP_SCALE * (swell === undefined ? 1 : swell);
+
         var centerX = this.width / 2;
         var centerY = this.height / 2;
 
@@ -79,9 +82,9 @@ export class ParticleRenderer {
         for (var i = 0; i < particles.length; i++) {
             var p = particles[i];
 
-            var x = (m00 * p.x + m01 * p.y + m02 * p.z) * GROUP_SCALE;
-            var y = (m10 * p.x + m11 * p.y + m12 * p.z) * GROUP_SCALE;
-            var z = (m20 * p.x + m21 * p.y + m22 * p.z) * GROUP_SCALE;
+            var x = (m00 * p.x + m01 * p.y + m02 * p.z) * scale;
+            var y = (m10 * p.x + m11 * p.y + m12 * p.z) * scale;
+            var z = (m20 * p.x + m21 * p.y + m22 * p.z) * scale;
 
             var depth = CAMERA_Z - z;
             if (depth <= 1) continue; // at or behind the near plane

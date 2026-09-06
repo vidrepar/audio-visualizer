@@ -67,18 +67,6 @@ body{
     left: 0;
 }
 
-.status{
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    text-align: center;
-    font-family: 'Source Code Pro', monospace;
-    font-size: 14px;
-    color: rgb(206,51,51);
-}
-
 /*
 
     PROGRESS BAR
@@ -186,4 +174,158 @@ progress[aria-valuenow]:before  {
 .about-container a:hover{
     text-decoration: underline;
     color: #0000FF;
+}
+
+/*
+
+    SOURCE PANEL
+
+*/
+
+.panel{
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    max-width: 430px;
+
+    font-family: 'Source Code Pro', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgb(206,51,51);
+}
+
+.panel-row{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.panel input[type="text"]{
+    flex: 1 1 180px;
+    min-width: 0;
+
+    font: inherit;
+    color: rgb(206,51,51);
+    background: rgba(255,255,255,0.35);
+    border: 1px solid rgba(206,51,51,0.5);
+    border-radius: 2px;
+    padding: 5px 7px;
+}
+
+.panel input[type="text"]::placeholder{
+    color: rgba(206,51,51,0.6);
+}
+
+.panel input[type="text"]:focus{
+    outline: none;
+    border-color: #0000FF;
+}
+
+.panel button,
+.file-button{
+    font: inherit;
+    color: rgb(206,51,51);
+    background: rgba(255,255,255,0.35);
+    border: 1px solid rgba(206,51,51,0.5);
+    border-radius: 2px;
+    padding: 5px 9px;
+    cursor: pointer;
+}
+
+.panel button:hover,
+.file-button:hover{
+    color: #0000FF;
+    border-color: #0000FF;
+}
+
+/* The real file input is replaced by its label, which is styled as a button. */
+#file-input{
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#file-input:focus-visible + .file-button{
+    outline: 2px solid #0000FF;
+}
+
+.panel-line{
+    margin: 0;
+    min-height: 1.4em;
+    word-break: break-word;
+}
+
+.panel-line:empty{
+    min-height: 0;
+}
+
+.listening{
+    color: #0000FF;
+}
+
+.link-button{
+    font: inherit;
+    color: rgb(206,51,51);
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.link-button:hover{
+    color: #0000FF;
+}
+
+.status{
+    color: #0000FF;
+}
+
+/*
+
+    YOUTUBE PLAYER
+
+    Kept on screen and a usable size: browsers throttle or refuse playback in a
+    player that is hidden or reduced to a pixel.
+
+*/
+
+.youtube-host{
+    position: absolute;
+    left: 30px;
+    bottom: 30px;
+    width: 280px;
+    height: 158px;
+    border: 1px solid rgba(206,51,51,0.5);
+    background: rgba(0,0,0,0.15);
+}
+
+.youtube-host iframe{
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+@media (max-width: 720px){
+    .panel{
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        max-width: none;
+    }
+
+    .youtube-host{
+        left: 16px;
+        bottom: 120px;
+        width: 200px;
+        height: 113px;
+    }
+
+    .about-container{
+        display: none;
+    }
 }
