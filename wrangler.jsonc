@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "audio-visualizer",
+  "compatibility_date": "2026-09-06",
+  /* A static site with no server code: the assets binding serves dist/ directly, so
+     there is no `main` and no Worker script to run. Pages was the old way to say this;
+     Workers with an assets directory is the current one. */
+  "assets": {
+    "directory": "./dist"
+    /* No SPA fallback. This is one page with real files beside it, not a client-routed
+       app - and with the fallback on, a mistyped script path answers 200 with index.html
+       instead of 404, so a broken build looks like a working one until the console is
+       opened. */
+  }
+}
