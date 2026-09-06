@@ -1,12 +1,12 @@
 {
   "name": "audio-visualizer",
   "version": "1.0.0",
-  "description": "A particle cloud that morphs between a sphere, a box and a heart in time with the music, drawn on an HTML canvas.",
+  "description": "A particle cloud that morphs between a sphere, a box and a heart in time with whatever you play it, drawn on an HTML canvas.",
   "main": "index.html",
   "scripts": {
     "start": "node server.js",
     "build": "node scripts/build.mjs",
-    "deploy": "npm run build && wrangler pages deploy"
+    "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
     "wrangler": "^4.129.0"

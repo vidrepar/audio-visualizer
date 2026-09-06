@@ -62,14 +62,8 @@ Copies the deployable files into `dist/`.
 
 ## Deploy
 
-The site is hosted on Cloudflare Pages, which reads its project name and
-output directory from `wrangler.toml`.
-
-Connect the repository to a Pages project in the Cloudflare dashboard with
-build command `npm run build` and output directory `dist`, and every push
-deploys itself.
-
-To deploy from your machine instead:
+The site is a Worker with a static assets directory; `wrangler.jsonc` points it
+at `dist/` and there is no server code to run.
 
 ```
 npm install
