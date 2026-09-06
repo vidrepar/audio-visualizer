@@ -1,20 +1,21 @@
 /**
  * Audio visualizer.
  *
- * A cloud of particles morphs between a sphere, a box and a heart according to
- * how much bass the music is putting out, and pulses on the beat. The music can
- * be the demo track, an audio file, or a YouTube video the visitor pastes in.
+ * Paste a YouTube link and a cloud of particles morphs between a sphere, a box
+ * and a heart according to how much bass the track is putting out, pulsing on
+ * the beat.
  *
- * A cross-origin YouTube iframe never exposes its audio, so for a YouTube video
- * the page listens to captured tab audio instead of reading the player. That is
- * also why nothing here has to fetch, download or decode anything from YouTube.
+ * A cross-origin YouTube iframe never exposes its audio, so the page listens to
+ * captured tab audio instead of reading the player. That request has to be made
+ * while the visitor's click is still live, which is why submitting the link
+ * fires it off before anything is awaited.
  */
 
 import { SHAPES } from './shapes.js';
 import { AudioEngine, captureTabAudio, captureMicrophone } from './audio.js';
 import { ParticleRenderer } from './renderer.js';
 import { BassTracker } from './analysis.js';
-import { YouTubePlayer, parseVideoId } from './youtube.js';
+import { YouTubePlayer, parseVideoId, preloadApi } from './youtube.js';
 import { tweenTo, updateTweens } from './tween.js';
 
 var DEMO_URL = 'assets/audio/song.mp3';
@@ -40,6 +41,14 @@ var POSES = {
 var BEAT_SWELL = 0.16;   // how far a beat pushes the cloud outwards
 var IDLE_SPIN = 0.06;    // radians per second while nothing is playing
 
+// With nothing playing the cloud is a backdrop and draws itself small, so the
+// one thing on screen to act on is the link field. It grows into the room once
+// there is music.
+var BACKDROP_SCALE = 0.5;
+var PRESENCE_EASE = 1.4; // per second
+
+var SHARE_PROMPT = 'Pick this tab, tick "Share tab audio", and share.';
+
 var app = {
 
     engine: null,
@@ -47,14 +56,15 @@ var app = {
     renderer: null,
     youtube: null,
 
-    // 'track' while playing a decoded buffer, 'youtube' while a video is loaded.
-    mode: 'track',
-    trackTitle: DEMO_TITLE,
+    // 'idle' until something is loaded, then 'youtube' or 'track' (the demo or
+    // a file), which is what the play button and progress bar follow.
+    mode: 'idle',
 
     particles: [],
     rotation: { x: 0, y: 0, z: 0 },
     color: { r: 25, g: 100, b: 180 },
     swell: 1,
+    presence: BACKDROP_SCALE,
 
     elements: {},
     lastFrameTime: 0,
@@ -64,15 +74,15 @@ var app = {
             canvas: document.getElementById('scene'),
             progress: document.getElementById('progress'),
             playToggle: document.getElementById('play-toggle'),
-            status: document.getElementById('status'),
-            nowPlaying: document.getElementById('now-playing'),
-            listening: document.getElementById('listening'),
+            launcher: document.getElementById('launcher'),
             urlForm: document.getElementById('url-form'),
             urlInput: document.getElementById('url-input'),
+            nowPlaying: document.getElementById('now-playing'),
+            message: document.getElementById('message'),
+            enableAudio: document.getElementById('enable-audio'),
+            useMic: document.getElementById('use-mic'),
+            useDemo: document.getElementById('use-demo'),
             fileInput: document.getElementById('file-input'),
-            captureTab: document.getElementById('capture-tab'),
-            captureMic: document.getElementById('capture-mic'),
-            stopListening: document.getElementById('stop-listening'),
             youtubeHost: document.getElementById('youtube-host')
         };
 
@@ -89,7 +99,9 @@ var app = {
 
         setInterval(app.animateColor, COLOR_INTERVAL);
 
-        app.loadDemo();
+        // Fetched now so that creating a player later is quick enough to happen
+        // inside the click that asks for tab audio.
+        preloadApi();
     },
 
     bindEvents: function () {
@@ -97,34 +109,15 @@ var app = {
             app.renderer.resize();
         });
 
-        app.elements.playToggle.addEventListener('click', app.togglePlayback);
         app.elements.urlForm.addEventListener('submit', app.onUrlSubmit);
+        app.elements.playToggle.addEventListener('click', app.togglePlayback);
+        app.elements.useDemo.addEventListener('click', app.useDemo);
         app.elements.fileInput.addEventListener('change', app.onFileChosen);
-        app.elements.captureTab.addEventListener('click', function () {
-            app.startListening(captureTabAudio, 'this tab');
-        });
-        app.elements.captureMic.addEventListener('click', function () {
-            app.startListening(captureMicrophone, 'microphone');
-        });
-        app.elements.stopListening.addEventListener('click', app.stopListening);
+        app.elements.enableAudio.addEventListener('click', app.onEnableAudio);
+        app.elements.useMic.addEventListener('click', app.onUseMicrophone);
     },
 
-    /* ------------------------------------------------------------------ input */
-
-    loadDemo: async function () {
-        app.setStatus('Loading the demo track...');
-
-        try {
-            await app.engine.loadUrl(DEMO_URL);
-        } catch (error) {
-            app.setStatus('Could not load the demo track. Paste a YouTube link or pick a file.');
-            console.error(error);
-            return;
-        }
-
-        app.setTrack('track', DEMO_TITLE);
-        app.setStatus('');
-    },
+    /* ----------------------------------------------------------- youtube flow */
 
     onUrlSubmit: async function (event) {
         event.preventDefault();
@@ -132,106 +125,196 @@ var app = {
         var videoId = parseVideoId(app.elements.urlInput.value);
 
         if (!videoId) {
-            app.setStatus('That does not look like a YouTube link.');
+            app.setMessage('That does not look like a YouTube link.');
             return;
         }
 
-        app.setStatus('Loading the video...');
+        // Both of these start now: the capture request has to be made while the
+        // submit is still a live user gesture, and the video may as well load
+        // behind the browser's sharing prompt.
+        var alreadyListening = app.engine.mode === 'stream';
+        var capturing = alreadyListening ? Promise.resolve(true) : app.requestTabAudio();
+        var loading = app.loadVideo(videoId).then(function () { return null; },
+            function (error) { return error; });
+
+        app.setMessage(alreadyListening ? 'Loading the video...' : SHARE_PROMPT);
         app.elements.urlInput.blur();
 
-        try {
-            if (!app.youtube) {
-                app.youtube = new YouTubePlayer(app.elements.youtubeHost);
-                app.youtube.onStateChange = app.onYouTubeStateChange;
-            }
+        var listening = await capturing;
+        app.setMessage('Loading the video...');
 
-            await app.youtube.load(videoId);
-        } catch (error) {
-            app.setStatus(error.message);
-            console.error(error);
+        var failure = await loading;
+        if (failure) {
+            app.setMessage(failure.message);
+            console.error(failure);
             return;
         }
 
         app.engine.pause();
         app.elements.youtubeHost.hidden = false;
-        app.setTrack('youtube', 'YouTube video');
 
-        app.setStatus(app.engine.mode === 'stream'
-            ? 'Press play.'
-            : 'Press play, then "hear this tab" so the visuals can listen.');
+        // Emptied so the field reads as an invitation for the next link rather
+        // than a record of the last one.
+        app.elements.urlInput.value = '';
+
+        app.enter('youtube', 'YouTube video');
+        app.youtube.play();
+
+        app.setMessage(listening ? '' : 'Playing, but it cannot hear the video yet.');
+    },
+
+    loadVideo: async function (videoId) {
+        if (!app.youtube) {
+            app.youtube = new YouTubePlayer(app.elements.youtubeHost);
+            app.youtube.onStateChange = app.onYouTubeStateChange;
+        }
+
+        await app.youtube.load(videoId);
+    },
+
+    /* -------------------------------------------------------------- listening */
+
+    /**
+     * Ask for this tab's audio. Called synchronously from a click so the
+     * request still carries the visitor's gesture; resolves to whether the
+     * visualizer ended up with something to listen to.
+     */
+    requestTabAudio: function () {
+        return captureTabAudio()
+            .then(function (stream) { return app.listenTo(stream); })
+            .catch(function (error) { return app.onCaptureFailed(error); });
+    },
+
+    listenTo: async function (stream) {
+        await app.engine.attachStream(stream);
+
+        app.tracker.reset();
+        app.elements.enableAudio.hidden = true;
+        app.elements.useMic.hidden = true;
+        app.updatePlayButton();
+
+        return true;
+    },
+
+    onCaptureFailed: function (error) {
+        // Dismissing the browser's own prompt is a choice, not a fault.
+        var dismissed = error.name === 'NotAllowedError';
+
+        // Firefox and Safari can share a tab but not its sound.
+        app.elements.useMic.hidden = dismissed;
+        app.elements.enableAudio.hidden = false;
+
+        if (!dismissed) console.warn(error);
+
+        return false;
+    },
+
+    onEnableAudio: function () {
+        app.setMessage(SHARE_PROMPT);
+
+        app.requestTabAudio().then(function (listening) {
+            app.setMessage(listening ? '' : 'Still not hearing anything.');
+        });
+    },
+
+    onUseMicrophone: function () {
+        captureMicrophone()
+            .then(function (stream) { return app.listenTo(stream); })
+            .then(function () { app.setMessage(''); })
+            .catch(function (error) { app.setMessage(error.message); });
+    },
+
+    /* ------------------------------------------------------- files and demo */
+
+    useDemo: async function () {
+        app.setMessage('Loading the demo track...');
+
+        try {
+            await app.engine.loadUrl(DEMO_URL);
+        } catch (error) {
+            app.setMessage('The demo track could not be loaded.');
+            console.error(error);
+            return;
+        }
+
+        app.startTrack(DEMO_TITLE);
     },
 
     onFileChosen: async function (event) {
         var file = event.target.files[0];
         if (!file) return;
 
-        app.setStatus('Reading ' + file.name + '...');
+        app.setMessage('Reading ' + file.name + '...');
 
         try {
             await app.engine.loadFile(file);
         } catch (error) {
-            app.setStatus('That file could not be decoded.');
+            app.setMessage('That file could not be decoded.');
             console.error(error);
             return;
         }
 
-        app.hideYouTube();
-        app.setTrack('track', file.name);
-        app.setStatus('');
-        app.togglePlayback();
+        app.startTrack(file.name);
     },
 
-    setTrack: function (mode, title) {
+    /** Take over playback for a decoded track, putting any video aside. */
+    startTrack: async function (title) {
+        if (app.youtube) app.youtube.pause();
+        app.elements.youtubeHost.hidden = true;
+
+        // A live capture would drown out a track this page is playing itself.
+        app.engine.detachStream();
+        app.elements.enableAudio.hidden = true;
+        app.elements.useMic.hidden = true;
+
+        app.enter('track', title);
+        app.setMessage('');
+
+        await app.engine.play();
+        app.updatePlayButton();
+    },
+
+    /* ---------------------------------------------------------- presentation */
+
+    /** Move into a playing state: the launcher steps aside and names the track. */
+    enter: function (mode, title) {
         app.mode = mode;
-        app.trackTitle = title;
         app.tracker.reset();
 
-        app.elements.nowPlaying.textContent = title;
-        app.elements.playToggle.disabled = false;
+        app.elements.launcher.classList.add('is-compact');
+        app.elements.urlInput.placeholder = 'paste another link';
+
+        app.setTitle(title);
+
         app.elements.progress.value = 0;
         app.elements.progress.max = app.duration || 1;
 
         app.updatePlayButton();
     },
 
-    hideYouTube: function () {
-        if (!app.youtube) return;
-
-        app.youtube.pause();
-        app.elements.youtubeHost.hidden = true;
+    setTitle: function (title) {
+        app.title = title;
+        app.elements.nowPlaying.textContent = title;
+        app.elements.nowPlaying.hidden = !title;
     },
 
-    /* -------------------------------------------------------------- listening */
-
-    startListening: async function (capture, label) {
-        try {
-            var stream = await capture();
-            await app.engine.attachStream(stream);
-        } catch (error) {
-            // A visitor dismissing the browser's own picker is not an error.
-            app.setStatus(error.name === 'NotAllowedError' ? '' : error.message);
-            return;
-        }
-
-        app.tracker.reset();
-        app.setStatus('');
-        app.updateListeningLabel(label);
-        app.updatePlayButton();
+    setMessage: function (message) {
+        app.elements.message.textContent = message;
+        app.elements.message.hidden = message === '';
     },
 
-    stopListening: function () {
-        app.engine.detachStream();
-        app.tracker.reset();
-        app.updateListeningLabel(null);
-        app.updatePlayButton();
-    },
+    updatePlayButton: function () {
+        // A video carries its own controls, so this page only shows a play
+        // button for tracks it is playing itself.
+        var owned = app.mode === 'track' && app.engine.mode === 'buffer';
 
-    updateListeningLabel: function (label) {
-        var listening = app.engine.mode === 'stream';
+        app.elements.playToggle.hidden = !owned;
+        if (!owned) return;
 
-        app.elements.listening.textContent = listening ? 'listening to ' + label : '';
-        app.elements.listening.hidden = !listening;
-        app.elements.stopListening.hidden = !listening;
+        var playing = app.engine.playing;
+        app.elements.playToggle.classList.toggle('icon-pause', playing);
+        app.elements.playToggle.classList.toggle('icon-play', !playing);
+        app.elements.playToggle.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     },
 
     /* -------------------------------------------------------------- transport */
@@ -255,17 +338,7 @@ var app = {
     },
 
     togglePlayback: async function () {
-        if (app.mode === 'youtube') {
-            if (!app.youtube) return;
-
-            if (app.youtube.playing) app.youtube.pause();
-            else app.youtube.play();
-
-            // The player reports back through onStateChange.
-            return;
-        }
-
-        if (!app.engine.buffer) return;
+        if (app.mode !== 'track' || !app.engine.buffer) return;
 
         if (app.engine.playing) {
             app.engine.pause();
@@ -280,8 +353,6 @@ var app = {
     },
 
     onYouTubeStateChange: function () {
-        app.updatePlayButton();
-
         var duration = app.youtube.duration;
         if (duration) app.elements.progress.max = duration;
 
@@ -293,24 +364,12 @@ var app = {
         app.updatePlayButton();
     },
 
-    updatePlayButton: function () {
-        var playing = app.playing;
+    /** The player reports its title asynchronously, and again per video. */
+    refreshTitle: function () {
+        if (app.mode !== 'youtube' || !app.youtube) return;
 
-        // While a live stream is the input, playback belongs to whatever is
-        // making the sound; there is nothing here for the button to control.
-        var listeningToStream = app.mode === 'track' && app.engine.mode === 'stream';
-
-        app.elements.playToggle.disabled = listeningToStream ||
-            (app.mode === 'track' && !app.engine.buffer);
-
-        app.elements.playToggle.classList.toggle('icon-pause', playing);
-        app.elements.playToggle.classList.toggle('icon-play', !playing);
-        app.elements.playToggle.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-    },
-
-    setStatus: function (message) {
-        app.elements.status.textContent = message;
-        app.elements.status.hidden = message === '';
+        var title = app.youtube.title;
+        if (title && title !== app.title) app.setTitle(title);
     },
 
     /* --------------------------------------------------------------- visuals */
@@ -366,29 +425,19 @@ var app = {
             app.swell += (1 - app.swell) * 0.1;
         }
 
+        var target = app.mode === 'idle' ? BACKDROP_SCALE : 1;
+        app.presence += (target - app.presence) * Math.min(PRESENCE_EASE * delta, 1);
+
         app.updateProgress();
         updateTweens(delta);
 
-        app.renderer.render(app.particles, app.rotation, rgbToCss(app.color), app.swell);
-    },
-
-    refreshTitle: function () {
-        if (app.mode !== 'youtube' || !app.youtube) return;
-
-        var title = app.youtube.title;
-        if (title && title !== app.trackTitle) {
-            app.trackTitle = title;
-            app.elements.nowPlaying.textContent = title;
-        }
+        app.renderer.render(app.particles, app.rotation, rgbToCss(app.color), app.swell * app.presence);
     },
 
     updateProgress: function () {
         app.refreshTitle();
 
-        if (app.mode === 'track' && app.engine.mode === 'stream') {
-            app.elements.progress.value = 0;
-            return;
-        }
+        if (app.mode === 'idle') return;
 
         if (!app.playing) return;
 

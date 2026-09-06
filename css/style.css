@@ -60,6 +60,11 @@ body{
     background: #ff717e;
 }
 
+/* Class-based display rules elsewhere would otherwise outrank [hidden]. */
+[hidden]{
+    display: none !important;
+}
+
 #scene{
     display: block;
     position: fixed;
@@ -178,92 +183,117 @@ progress[aria-valuenow]:before  {
 
 /*
 
-    SOURCE PANEL
+    LAUNCHER
+
+    One input, centred over the scene. Once something is playing it steps aside
+    into the corner so the visualization has the screen to itself.
 
 */
 
-.panel{
+.launcher{
     position: absolute;
-    top: 30px;
-    left: 30px;
-    max-width: 430px;
+    top: 26%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(520px, calc(100% - 48px));
 
     font-family: 'Source Code Pro', monospace;
     font-size: 13px;
-    line-height: 1.4;
+    line-height: 1.5;
     color: rgb(206,51,51);
+    text-align: center;
+
+    transition: top 0.5s ease, left 0.5s ease, transform 0.5s ease, width 0.5s ease;
 }
 
-.panel-row{
+.launcher.is-compact{
+    top: 28px;
+    left: 28px;
+    transform: none;
+    width: min(360px, calc(100% - 56px));
+    text-align: left;
+}
+
+.launcher-form{
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 8px;
 }
 
-.panel input[type="text"]{
-    flex: 1 1 180px;
+#url-input{
+    flex: 1 1 auto;
     min-width: 0;
 
-    font: inherit;
+    font-family: inherit;
+    font-size: 17px;
     color: rgb(206,51,51);
     background: rgba(255,255,255,0.35);
-    border: 1px solid rgba(206,51,51,0.5);
-    border-radius: 2px;
-    padding: 5px 7px;
+    border: 1px solid rgba(206,51,51,0.45);
+    border-radius: 3px;
+    padding: 12px 14px;
+
+    transition: font-size 0.5s ease, padding 0.5s ease;
 }
 
-.panel input[type="text"]::placeholder{
+.is-compact #url-input{
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+#url-input::placeholder{
     color: rgba(206,51,51,0.6);
 }
 
-.panel input[type="text"]:focus{
+#url-input:focus{
     outline: none;
     border-color: #0000FF;
+    background: rgba(255,255,255,0.5);
 }
 
-.panel button,
-.file-button{
-    font: inherit;
+.launcher-form button{
+    font-family: inherit;
+    font-size: 17px;
     color: rgb(206,51,51);
     background: rgba(255,255,255,0.35);
-    border: 1px solid rgba(206,51,51,0.5);
-    border-radius: 2px;
-    padding: 5px 9px;
+    border: 1px solid rgba(206,51,51,0.45);
+    border-radius: 3px;
+    padding: 0 16px;
     cursor: pointer;
+
+    transition: font-size 0.5s ease, padding 0.5s ease;
 }
 
-.panel button:hover,
-.file-button:hover{
+.is-compact .launcher-form button{
+    font-size: 13px;
+    padding: 0 10px;
+}
+
+.launcher-form button:hover{
     color: #0000FF;
     border-color: #0000FF;
 }
 
-/* The real file input is replaced by its label, which is styled as a button. */
-#file-input{
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
-}
-
-#file-input:focus-visible + .file-button{
-    outline: 2px solid #0000FF;
-}
-
-.panel-line{
-    margin: 0;
-    min-height: 1.4em;
+.now-playing,
+.message,
+.secondary{
+    margin: 10px 0 0;
     word-break: break-word;
 }
 
-.panel-line:empty{
-    min-height: 0;
+.now-playing{
+    color: rgb(206,51,51);
 }
 
-.listening{
+.message{
     color: #0000FF;
+}
+
+/* Nothing here is the main event, so it stays quiet until it is wanted. */
+.secondary{
+    opacity: 0.75;
+}
+
+.secondary:hover{
+    opacity: 1;
 }
 
 .link-button{
@@ -280,8 +310,27 @@ progress[aria-valuenow]:before  {
     color: #0000FF;
 }
 
-.status{
+#enable-audio,
+#use-mic{
     color: #0000FF;
+}
+
+.separator{
+    margin: 0 6px;
+    opacity: 0.6;
+}
+
+/* Only the label is visible; the input itself stays reachable by keyboard. */
+#file-input{
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#file-input:focus-visible + .link-button{
+    outline: 2px solid #0000FF;
 }
 
 /*
@@ -289,18 +338,25 @@ progress[aria-valuenow]:before  {
     YOUTUBE PLAYER
 
     Kept on screen and a usable size: browsers throttle or refuse playback in a
-    player that is hidden or reduced to a pixel.
+    player that is hidden or shrunk to a pixel. It is also the video's own
+    transport, which is why this page shows no play button for it.
 
 */
 
 .youtube-host{
     position: absolute;
-    left: 30px;
-    bottom: 30px;
-    width: 280px;
-    height: 158px;
-    border: 1px solid rgba(206,51,51,0.5);
+    left: 28px;
+    bottom: 28px;
+    width: 260px;
+    height: 146px;
+    border: 1px solid rgba(206,51,51,0.4);
     background: rgba(0,0,0,0.15);
+    opacity: 0.85;
+    transition: opacity 0.3s ease;
+}
+
+.youtube-host:hover{
+    opacity: 1;
 }
 
 .youtube-host iframe{
@@ -311,18 +367,21 @@ progress[aria-valuenow]:before  {
 }
 
 @media (max-width: 720px){
-    .panel{
+    .launcher{
+        width: calc(100% - 32px);
+    }
+
+    .launcher.is-compact{
         top: 16px;
         left: 16px;
-        right: 16px;
-        max-width: none;
+        width: calc(100% - 32px);
     }
 
     .youtube-host{
         left: 16px;
-        bottom: 120px;
-        width: 200px;
-        height: 113px;
+        bottom: 16px;
+        width: 180px;
+        height: 101px;
     }
 
     .about-container{

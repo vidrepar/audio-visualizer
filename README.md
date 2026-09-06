@@ -6,29 +6,27 @@ Drawn on an HTML `<canvas>`.
 
 Live: https://audio-visualizer.pages.dev
 
-## Playing something
+## Using it
 
-Four ways in:
+Paste a YouTube link, press Enter. The browser asks which tab to share — pick
+this one, tick *Share tab audio* — and the video plays with the visuals moving
+to it.
 
-- **The demo track**, loaded on arrival.
-- **An audio file** from your machine — *open a file*.
-- **A YouTube link** — paste it and press *load*.
-- **Anything else you can hear** — *hear the room* listens through the
-  microphone.
+That sharing prompt is the one step that cannot be removed. A YouTube video
+plays inside a cross-origin iframe, and a page cannot read the audio out of
+one; extracting it server-side would break YouTube's terms and needs a backend
+this static site does not have. So the page listens to the tab instead. Nothing
+is fetched, downloaded or decoded from YouTube — the embedded player is the
+only thing touching it, and it keeps its own controls.
 
-### Why YouTube needs one extra click
+The request is made from inside the keypress, because browsers only grant a
+capture while the visitor's gesture is still live. That is why submitting the
+link asks for sharing before it awaits anything.
 
-A YouTube video plays inside a cross-origin iframe, and a page cannot read the
-audio out of one. Extracting the audio server-side would break YouTube's terms
-and needs a backend this static site does not have.
-
-So the page listens instead. Press *hear this tab*, pick this tab and tick
-*share tab audio*, and the visualizer analyses the sound as it plays. Nothing is
-fetched, downloaded or decoded from YouTube — the embedded player is the only
-thing touching it, and it stays in charge of playback.
-
-Tab audio capture is a Chromium feature. In Firefox and Safari, use *hear the
-room* or open a file instead.
+Tab audio is a Chromium feature. Elsewhere, or if the prompt is dismissed, the
+video still plays and the page offers to listen through the microphone instead.
+Two quieter links cover the rest: a demo track, and any audio file from your
+machine.
 
 ## How it works
 

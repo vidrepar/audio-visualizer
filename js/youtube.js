@@ -52,6 +52,17 @@ function validId(candidate) {
     return /^[\w-]{11}$/.test(candidate) ? candidate : null;
 }
 
+/**
+ * Start fetching the IFrame API early. Creating a player is then quick enough
+ * to happen inside the visitor's click, which matters because asking for tab
+ * audio needs that click to still be live.
+ */
+export function preloadApi() {
+    loadApi().catch(function () {
+        // Nothing to do yet; the failure is reported when a link is submitted.
+    });
+}
+
 /** Load the IFrame API once, resolving when it is ready to construct players. */
 function loadApi() {
     if (apiPromise) return apiPromise;

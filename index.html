@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Audio visualization</title>
-    <meta name="description" content="A particle cloud that morphs between a sphere, a box and a heart in time with whatever you play it.">
+    <meta name="description" content="Paste a YouTube link and watch a particle cloud move to it.">
 
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23ff717e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%230000ff'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="css/style.css">
@@ -17,36 +17,34 @@
     <progress id="progress" value="0" max="1"></progress>
 </div>
 
-<div class="panel">
-    <form id="url-form" class="panel-row" autocomplete="off">
-        <input id="url-input" type="text" placeholder="paste a youtube link" aria-label="YouTube link" spellcheck="false">
-        <button type="submit">load</button>
+<div id="launcher" class="launcher">
+    <form id="url-form" class="launcher-form" autocomplete="off">
+        <input id="url-input" type="text" placeholder="paste a youtube link" aria-label="YouTube link" spellcheck="false" autofocus>
+        <button type="submit" aria-label="Load">&rarr;</button>
     </form>
 
-    <div class="panel-row">
-        <button id="capture-tab" type="button">hear this tab</button>
-        <button id="capture-mic" type="button">hear the room</button>
-        <input id="file-input" type="file" accept="audio/*">
-        <label class="file-button" for="file-input">open a file</label>
-    </div>
+    <p id="now-playing" class="now-playing" hidden></p>
 
-    <p id="now-playing" class="panel-line"></p>
-    <p id="listening" class="panel-line listening" hidden></p>
-    <p class="panel-line">
-        <button id="stop-listening" type="button" class="link-button" hidden>stop listening</button>
+    <p id="message" class="message" hidden></p>
+
+    <p class="secondary">
+        <button id="enable-audio" type="button" class="link-button" hidden>let it hear the music</button>
+        <button id="use-mic" type="button" class="link-button" hidden>listen through the microphone</button>
+        <button id="use-demo" type="button" class="link-button">try the demo</button>
+        <span class="separator">·</span>
+        <input id="file-input" type="file" accept="audio/*">
+        <label class="link-button" for="file-input">open a file</label>
     </p>
-    <p id="status" class="panel-line status" hidden></p>
 </div>
 
 <div id="youtube-host" class="youtube-host" hidden></div>
 
 <div class="buttons-bg">
-    <button id="play-toggle" class="icon-play" type="button" aria-label="Play" disabled></button>
+    <button id="play-toggle" class="icon-play" type="button" aria-label="Play" hidden></button>
 </div>
 
 <div class="about-container">
-    <div>dev: Vid Repar</div>
-    <div>github: <a href="https://github.com/vidrepar/audio-visualizer">github.com/vidrepar/audio-visualizer</a></div>
+    <a href="https://github.com/vidrepar/audio-visualizer">github.com/vidrepar/audio-visualizer</a>
 </div>
 
 <script type="module" src="js/app.js"></script>
