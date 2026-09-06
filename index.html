@@ -19,9 +19,16 @@
 
 <div id="launcher" class="launcher">
     <form id="url-form" class="launcher-form" autocomplete="off">
-        <input id="url-input" type="text" placeholder="paste a youtube link" aria-label="YouTube link" spellcheck="false" autofocus>
+        <input id="url-input" type="text" placeholder="search a song, or paste a link"
+               aria-label="Search a song or paste a YouTube link" spellcheck="false" autofocus
+               role="combobox" aria-expanded="false" aria-controls="suggestions" aria-autocomplete="list">
         <button type="submit" aria-label="Load">&rarr;</button>
     </form>
+
+    <!-- The picker. One list, keyboard-first: type to filter, arrows to move,
+         Enter to play. It is a plain <ul> rather than a <datalist> because a
+         datalist cannot be styled and cannot show two lines per row. -->
+    <ul id="suggestions" class="suggestions" role="listbox" aria-label="Songs" hidden></ul>
 
     <p id="now-playing" class="now-playing" hidden></p>
 

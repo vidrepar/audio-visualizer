@@ -17,6 +17,7 @@ import { ParticleRenderer } from './renderer.js';
 import { BassTracker } from './analysis.js';
 import { YouTubePlayer, parseVideoId, preloadApi } from './youtube.js';
 import { tweenTo, updateTweens } from './tween.js';
+import { search } from './catalog.js';
 
 var DEMO_URL = 'assets/audio/song.mp3';
 var DEMO_TITLE = 'Riptide - Vance Joy';
@@ -39,6 +40,15 @@ var POSES = {
 };
 
 var BEAT_SWELL = 0.16;   // how far a beat pushes the cloud outwards
+
+// How fast the cloud grows into a beat and how fast it comes back down, as
+// half-lives in seconds. The swell used to be assigned straight from the beat
+// pulse, which meant it jumped the full distance in a single frame - a jolt,
+// not a swell - and then fell on the pulse's own linear ramp. Attack and
+// release are separate because a beat should arrive faster than it leaves:
+// equal rates read as a wobble rather than a hit.
+var SWELL_ATTACK = 0.045;
+var SWELL_RELEASE = 0.20;
 var IDLE_SPIN = 0.06;    // radians per second while nothing is playing
 
 // With nothing playing the cloud is a backdrop and draws itself small, so the
@@ -64,9 +74,15 @@ var app = {
     rotation: { x: 0, y: 0, z: 0 },
     color: { r: 25, g: 100, b: 180 },
     swell: 1,
+    // The shape the particles are currently tweening towards. Kept so a morph is
+    // issued when the shape CHANGES rather than on every frame.
+    shape: null,
     presence: BACKDROP_SCALE,
 
     elements: {},
+    // Set when a catalogue row was picked, so the header can name the track
+    // before YouTube reports its own title.
+    pendingTitle: null,
     lastFrameTime: 0,
 
     init: function () {
@@ -83,6 +99,7 @@ var app = {
             useMic: document.getElementById('use-mic'),
             useDemo: document.getElementById('use-demo'),
             fileInput: document.getElementById('file-input'),
+            suggestions: document.getElementById('suggestions'),
             youtubeHost: document.getElementById('youtube-host')
         };
 
@@ -110,6 +127,15 @@ var app = {
         });
 
         app.elements.urlForm.addEventListener('submit', app.onUrlSubmit);
+        app.elements.urlInput.addEventListener('input', app.onSearchInput);
+        app.elements.urlInput.addEventListener('focus', app.onSearchInput);
+        app.elements.urlInput.addEventListener('keydown', app.onSearchKey);
+        app.elements.suggestions.addEventListener('mousedown', app.onSuggestionPick);
+        /* Closing on blur has to wait a tick, or the mousedown that picked a row
+           is cancelled by the list disappearing under the cursor first. */
+        app.elements.urlInput.addEventListener('blur', function () {
+            setTimeout(app.closeSuggestions, 120);
+        });
         app.elements.playToggle.addEventListener('click', app.togglePlayback);
         app.elements.useDemo.addEventListener('click', app.useDemo);
         app.elements.fileInput.addEventListener('change', app.onFileChosen);
@@ -117,10 +143,129 @@ var app = {
         app.elements.useMic.addEventListener('click', app.onUseMicrophone);
     },
 
+    /* ------------------------------------------------------------ the picker */
+
+    // How many rows the list shows. Enough to scan without becoming a page.
+    SUGGESTION_LIMIT: 8,
+
+    suggestionIndex: -1,
+    suggestionRows: [],
+
+    /**
+     * Re-run the search on every keystroke.
+     *
+     * A pasted LINK is not a search: the moment the field holds something that
+     * parses as a video id, the list gets out of the way rather than offering
+     * eight songs whose titles happen to share letters with a URL.
+     */
+    onSearchInput: function () {
+        var value = app.elements.urlInput.value;
+
+        if (parseVideoId(value)) return app.closeSuggestions();
+
+        app.suggestionRows = search(value, app.SUGGESTION_LIMIT);
+        app.suggestionIndex = app.suggestionRows.length ? 0 : -1;
+        app.renderSuggestions();
+    },
+
+    renderSuggestions: function () {
+        var list = app.elements.suggestions;
+        list.innerHTML = '';
+
+        if (!app.suggestionRows.length) {
+            var empty = document.createElement('li');
+            empty.className = 'empty';
+            empty.textContent = 'Nothing matches - paste a link instead.';
+            list.appendChild(empty);
+        } else {
+            for (var i = 0; i < app.suggestionRows.length; i++) {
+                var entry = app.suggestionRows[i];
+                var row = document.createElement('li');
+                row.setAttribute('role', 'option');
+                row.setAttribute('aria-selected', String(i === app.suggestionIndex));
+                row.dataset.index = String(i);
+
+                var title = document.createElement('span');
+                title.className = 'title';
+                title.textContent = entry[1];
+
+                var artist = document.createElement('span');
+                artist.className = 'artist';
+                artist.textContent = entry[2];
+
+                row.appendChild(title);
+                row.appendChild(artist);
+                list.appendChild(row);
+            }
+        }
+
+        list.hidden = false;
+        app.elements.urlInput.setAttribute('aria-expanded', 'true');
+        app.scrollSelectionIntoView();
+    },
+
+    closeSuggestions: function () {
+        app.elements.suggestions.hidden = true;
+        app.elements.urlInput.setAttribute('aria-expanded', 'false');
+        app.suggestionIndex = -1;
+    },
+
+    /** Arrows move, Enter plays, Escape gets out. */
+    onSearchKey: function (event) {
+        if (app.elements.suggestions.hidden) return;
+
+        if (event.key === 'Escape') {
+            app.closeSuggestions();
+            return;
+        }
+
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        if (!app.suggestionRows.length) return;
+
+        event.preventDefault();
+
+        var step = event.key === 'ArrowDown' ? 1 : -1;
+        var count = app.suggestionRows.length;
+        /* Wraps, because a list this short is a ring: pressing up on the first
+           row to reach the last is faster than eight presses down. */
+        app.suggestionIndex = (app.suggestionIndex + step + count) % count;
+        app.renderSuggestions();
+    },
+
+    onSuggestionPick: function (event) {
+        var row = event.target.closest('li[data-index]');
+        if (!row) return;
+        /* mousedown, not click, and prevented: the input must not lose focus
+           before the pick is handled. */
+        event.preventDefault();
+        app.playEntry(app.suggestionRows[Number(row.dataset.index)]);
+    },
+
+    scrollSelectionIntoView: function () {
+        var selected = app.elements.suggestions.querySelector('[aria-selected="true"]');
+        if (selected) selected.scrollIntoView({ block: 'nearest' });
+    },
+
+    /** Put a catalogue entry in the field and load it, as if it had been pasted. */
+    playEntry: function (entry) {
+        if (!entry) return;
+        app.closeSuggestions();
+        app.elements.urlInput.value = 'https://www.youtube.com/watch?v=' + entry[0];
+        app.pendingTitle = entry[1] + ' - ' + entry[2];
+        app.elements.urlForm.requestSubmit();
+    },
+
     /* ----------------------------------------------------------- youtube flow */
 
     onUrlSubmit: async function (event) {
         event.preventDefault();
+
+        /* Enter on a highlighted row plays that row. Typing "bohemian" and
+           pressing Enter should start the song, not report that it is not a
+           link - the field is a search box first and a URL box second. */
+        if (!app.elements.suggestions.hidden && app.suggestionIndex >= 0) {
+            return app.playEntry(app.suggestionRows[app.suggestionIndex]);
+        }
 
         var videoId = parseVideoId(app.elements.urlInput.value);
 
@@ -128,6 +273,8 @@ var app = {
             app.setMessage('That does not look like a YouTube link.');
             return;
         }
+
+        app.closeSuggestions();
 
         // Both of these start now: the capture request has to be made while the
         // submit is still a live user gesture, and the video may as well load
@@ -157,7 +304,8 @@ var app = {
         // than a record of the last one.
         app.elements.urlInput.value = '';
 
-        app.enter('youtube', 'YouTube video');
+        app.enter('youtube', app.pendingTitle || 'YouTube video');
+        app.pendingTitle = null;
         app.youtube.play();
 
         app.setMessage(listening ? '' : 'Playing, but it cannot hear the video yet.');
@@ -282,7 +430,7 @@ var app = {
         app.tracker.reset();
 
         app.elements.launcher.classList.add('is-compact');
-        app.elements.urlInput.placeholder = 'paste another link';
+        app.elements.urlInput.placeholder = 'search or paste another link';
 
         app.setTitle(title);
 
@@ -387,11 +535,21 @@ var app = {
 
     /**
      * Send every particle towards the matching vertex of `shape` and turn the
-     * cloud towards that shape's pose. Re-issuing this every frame is what
-     * gives the cloud its constant drift: each tween supersedes the last, so
-     * the particles are always easing towards the target without arriving.
+     * cloud towards that shape's pose.
+     *
+     * Issued only when the shape CHANGES. It used to run every frame, and
+     * because starting a tween replaces the running one, every frame restarted
+     * the ease from wherever the particle had got to - so the cloud crawled at
+     * a constant fraction of the remaining distance and never actually settled.
+     * That is the mush: an ease-out that is perpetually in its first frame has
+     * no ease in it at all. Letting one tween finish is what puts the arrival
+     * back, and it also stops rebuilding a tween for every particle 60 times a
+     * second.
      */
     morphTo: function (shape) {
+        if (shape === app.shape) return;
+        app.shape = shape;
+
         var vertices = SHAPES[shape];
         var pose = POSES[shape];
 
@@ -415,15 +573,21 @@ var app = {
         var delta = Math.min((now - app.lastFrameTime) / 1000, 0.1);
         app.lastFrameTime = now;
 
+        var swellTarget = 1;
+
         if (app.engine.listening) {
             var reading = app.tracker.update(app.engine.getBassAverage(), delta);
             app.morphTo(reading.shape);
-            app.swell = 1 + reading.pulse * BEAT_SWELL;
+            swellTarget = 1 + reading.pulse * BEAT_SWELL;
         } else {
             // Nothing to react to: drift, so the scene never looks frozen.
             app.rotation.y += IDLE_SPIN * delta;
-            app.swell += (1 - app.swell) * 0.1;
         }
+
+        // Chase the target rather than snapping to it, and chase it faster on
+        // the way up than on the way down - see SWELL_ATTACK / SWELL_RELEASE.
+        var halfLife = swellTarget > app.swell ? SWELL_ATTACK : SWELL_RELEASE;
+        app.swell += (swellTarget - app.swell) * (1 - Math.pow(0.5, delta / halfLife));
 
         var target = app.mode === 'idle' ? BACKDROP_SCALE : 1;
         app.presence += (target - app.presence) * Math.min(PRESENCE_EASE * delta, 1);

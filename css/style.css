@@ -388,3 +388,69 @@ progress[aria-valuenow]:before  {
         display: none;
     }
 }
+
+/* ---- The song picker ------------------------------------------------------
+   Anchored under the field rather than pushed in beside it: the launcher moves
+   to the corner once something is playing, and a list that reflows the layout
+   would drag the whole thing around while somebody is still typing. */
+.suggestions{
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 4px;
+
+    max-height: 46vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    text-align: left;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(206,51,51,0.35);
+    border-radius: 4px;
+    backdrop-filter: blur(6px);
+}
+
+.suggestions li{
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    padding: 7px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+
+    /* Long titles truncate instead of wrapping: every row the same height is
+       what makes arrowing through the list feel like one movement. */
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.suggestions li .title{
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+}
+
+.suggestions li .artist{
+    flex: 0 0 auto;
+    font-size: 12px;
+    opacity: 0.65;
+}
+
+/* Hover and keyboard selection share one appearance - the mouse and the arrow
+   keys are pointing at the same thing and should not look like two states. */
+.suggestions li:hover,
+.suggestions li[aria-selected="true"]{
+    background: rgba(206,51,51,0.16);
+}
+
+.suggestions .empty{
+    padding: 10px;
+    opacity: 0.6;
+    cursor: default;
+}
+
+.suggestions .empty:hover{ background: none; }
+
+/* Compact mode is the corner, where a 46vh dropdown would cover the artwork. */
+.is-compact .suggestions{ max-height: 34vh; }
