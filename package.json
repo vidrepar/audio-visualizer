@@ -6,10 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "build": "node scripts/build.mjs",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=audio-visualizer"
+    "deploy": "npm run build && wrangler pages deploy"
   },
   "devDependencies": {
-    "wrangler": "^4.42.0"
+    "wrangler": "^4.129.0"
   },
   "author": "Vid Repar",
   "license": "ISC"

@@ -35,13 +35,20 @@ Copies the deployable files into `dist/`.
 
 ## Deploy
 
-The site is hosted on Cloudflare Pages.
+The site is hosted on Cloudflare Pages, which reads its project name and
+output directory from `wrangler.toml`.
+
+Connect the repository to a Pages project in the Cloudflare dashboard with
+build command `npm run build` and output directory `dist`, and every push
+deploys itself.
+
+To deploy from your machine instead:
 
 ```
+npm install
 npx wrangler login     # once
 npm run deploy
 ```
 
-`npm run deploy` builds `dist/` and uploads it to the `audio-visualizer` Pages
-project. In CI, set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` instead
-of logging in.
+In CI, set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` instead of
+logging in.
